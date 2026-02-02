@@ -1,237 +1,158 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-<script>
-        // --- KONFIGURASI SPREADSHEET ---
-        // Tempelkan URL CSV Google Sheets Anda di bawah ini
-        const SPREADSHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/1GdoK0s7vMBVx42khSam-LzaWxlmJKoz2OZ-8TBGWva0/edit?usp=sharing"; 
-
-        let masterData = [];
-# Konfigurasi Halaman Streamlit agar tampilan penuh (wide)
+# Pastikan file Python dimulai dengan kode Python, bukan tag <script>
 st.set_page_config(
-    page_title="Dashboard Monitoring Sekolah",
+    page_title="Dashboard Monitoring Pemasangan Sekolah",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
-# Seluruh kode UI (HTML, CSS, JS) disimpan dalam variabel html_code
-html_code = """
+# Masukkan link CSV Google Sheets Anda di bawah ini
+# Cara: File -> Share -> Publish to web -> CSV
+URL_SPREADSHEET = "https://docs.google.com/spreadsheets/d/e/2PACX-1v.../pub?gid=0&single=true&output=csv"
+
+html_code = f"""
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Monitoring Pemasangan Sekolah</title>
-    <!-- Framework CSS Tailwind untuk desain modern -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Library Ikon Lucide -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-        body { 
-            font-family: 'Inter', sans-serif; 
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden;
-        }
-        .animate-spin-slow { animation: spin 2s linear infinite; }
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        
-        /* Kustomisasi Scrollbar agar lebih rapi */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+        body {{ font-family: 'Inter', sans-serif; }}
+        .glass-card {{ background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }}
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900">
+<body class="bg-slate-50 min-h-screen p-4 md:p-8">
 
-    <div id="app" class="p-4 md:p-8">
-        <!-- Header Dashboard -->
-        <div class="max-w-6xl mx-auto mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
-                <h1 class="text-3xl font-bold text-slate-800 flex items-center gap-3">
-                    <i data-lucide="layout-dashboard" class="text-blue-600 w-8 h-8"></i>
-                    Monitoring Pemasangan Sekolah
+                <h1 class="text-3xl font-extrabold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="monitor" class="text-blue-600"></i>
+                    Dashboard Monitoring Sekolah
                 </h1>
-                <p class="text-slate-500 mt-1 italic text-sm md:text-base">Laporan real-time status instalasi berdasarkan data Spreadsheet.</p>
+                <p class="text-slate-500">Status Pemasangan Real-time dari Spreadsheet</p>
             </div>
-            <button id="refreshBtn" class="flex items-center justify-center gap-2 bg-white border border-slate-200 px-5 py-2.5 rounded-xl hover:bg-slate-50 transition-all shadow-sm font-semibold text-slate-700 active:scale-95">
-                <i data-lucide="refresh-cw" id="refreshIcon" class="w-5 h-5"></i>
-                Refresh Data
+            <button onclick="window.location.reload()" class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
+                <i data-lucide="refresh-cw" size="18"></i> Refresh Data
             </button>
         </div>
 
-        <!-- Ringkasan Statistik (Stat Cards) -->
-        <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <!-- Sekolah Terpasang (Hijau) -->
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100 flex items-center gap-6">
-                <div class="bg-emerald-100 p-4 rounded-2xl text-emerald-600">
-                    <i data-lucide="check-circle" class="w-10 h-10"></i>
+        <!-- Statistik Utama -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="glass-card p-6 rounded-2xl border border-emerald-100 shadow-sm flex items-center gap-5">
+                <div class="bg-emerald-500 p-4 rounded-xl text-white shadow-lg shadow-emerald-200">
+                    <i data-lucide="check-circle-2" size="32"></i>
                 </div>
                 <div>
-                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Sekolah Terpasang</p>
-                    <h2 id="countInstalled" class="text-4xl font-black text-emerald-600">0</h2>
+                    <p class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Terpasang (Hijau)</p>
+                    <h2 id="installedCount" class="text-4xl font-bold text-emerald-600">0</h2>
                 </div>
             </div>
 
-            <!-- Sekolah Bermasalah (Merah) -->
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-rose-100 flex items-center gap-6">
-                <div class="bg-rose-100 p-4 rounded-2xl text-rose-600">
-                    <i data-lucide="alert-circle" class="w-10 h-10"></i>
+            <div class="glass-card p-6 rounded-2xl border border-rose-100 shadow-sm flex items-center gap-5">
+                <div class="bg-rose-500 p-4 rounded-xl text-white shadow-lg shadow-rose-200">
+                    <i data-lucide="alert-triangle" size="32"></i>
                 </div>
                 <div>
-                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Sekolah Bermasalah</p>
-                    <h2 id="countTrouble" class="text-4xl font-black text-rose-600">0</h2>
+                    <p class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Bermasalah (Merah)</p>
+                    <h2 id="troubleCount" class="text-4xl font-bold text-rose-600">0</h2>
                 </div>
             </div>
         </div>
 
-        <!-- Tabel Detail Trouble -->
-        <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
-            <div class="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <h3 class="text-xl font-bold flex items-center gap-2 text-slate-800">
-                    <i data-lucide="file-text" class="text-rose-500"></i>
-                    Daftar Detail Kerusakan (Trouble)
+        <!-- Tabel Detail -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="list-x" class="text-rose-500"></i>
+                    Daftar Sekolah Trouble
                 </h3>
-                <div class="relative">
-                    <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4"></i>
-                    <input 
-                        type="text" 
-                        id="searchInput"
-                        placeholder="Cari NPSN atau Nama..." 
-                        class="pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-72 text-sm transition-all"
-                    >
-                </div>
             </div>
-
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead class="bg-slate-50 text-slate-500">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-bold tracking-widest">
                         <tr>
-                            <th class="px-6 py-4 font-semibold uppercase text-xs tracking-wider">NPSN</th>
-                            <th class="px-6 py-4 font-semibold uppercase text-xs tracking-wider">Nama Sekolah</th>
-                            <th class="px-6 py-4 font-semibold uppercase text-xs tracking-wider">Status</th>
-                            <th class="px-6 py-4 font-semibold uppercase text-xs tracking-wider text-rose-600">Reason / Alasan</th>
+                            <th class="px-6 py-4">NPSN</th>
+                            <th class="px-6 py-4">Nama Sekolah</th>
+                            <th class="px-6 py-4 text-rose-600">Alasan Kerusakan (Reason)</th>
                         </tr>
                     </thead>
-                    <tbody id="tableBody" class="divide-y divide-slate-100">
-                        <!-- Konten akan dimuat oleh JavaScript -->
+                    <tbody id="troubleTable" class="divide-y divide-slate-100">
+                        <tr><td colspan="3" class="px-6 py-10 text-center text-slate-400 italic">Memuat data...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
-
-        <div id="demoNotice" class="hidden max-w-6xl mx-auto mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs md:text-sm">
-            <strong>Catatan:</strong> Menampilkan data demo. Pastikan URL CSV diisi di variabel SPREADSHEET_CSV_URL.
-        </div>
     </div>
 
     <script>
-        // --- KONFIGURASI SPREADSHEET ---
-        // Ganti string kosong di bawah ini dengan URL CSV Google Sheets Anda
-        // Format: Publish to Web -> Comma-separated values (.csv)
-        const SPREADSHEET_CSV_URL = ""; 
+        const CSV_URL = "{URL_SPREADSHEET}";
 
-        let masterData = [];
+        async function init() {{
+            try {{
+                const response = await fetch(CSV_URL);
+                const data = await response.text();
+                const rows = data.split('\\n').slice(1);
+                
+                let installed = 0;
+                let trouble = 0;
+                let troubleHtml = "";
 
-        function initIcons() {
-            lucide.createIcons();
-        }
+                rows.forEach(row => {{
+                    const cols = row.split(',');
+                    if (cols.length < 3) return;
 
-        const dummyData = [
-            { npsn: '1001', nama: 'SDN Contoh 01', status_warna: 'hijau', reason: '-' },
-            { npsn: '1002', nama: 'SDN Contoh 02', status_warna: 'merah', reason: 'Kabel terputus proyek jalan' },
-            { npsn: '1003', nama: 'SMPN Contoh 05', status_warna: 'hijau', reason: '-' },
-            { npsn: '1004', nama: 'SMKN Contoh 01', status_warna: 'merah', reason: 'Antena tersambar petir' }
-        ];
+                    const npsn = cols[0].trim();
+                    const nama = cols[1].trim();
+                    const warna = cols[2].toLowerCase().trim(); // Trigger: 'hijau' atau 'merah'
+                    const reason = cols[3] ? cols[3].trim() : "-";
 
-        async function fetchData() {
-            const btn = document.getElementById('refreshBtn');
-            const icon = document.getElementById('refreshIcon');
-            btn.disabled = true;
-            icon.classList.add('animate-spin');
+                    if (warna === 'hijau') {{
+                        installed++;
+                    }} else if (warna === 'merah') {{
+                        trouble++;
+                        troubleHtml += `
+                            <tr class="hover:bg-rose-50/50 transition-colors">
+                                <td class="px-6 py-4 font-mono text-sm font-bold text-slate-600">#\${npsn}</td>
+                                <td class="px-6 py-4 font-semibold text-slate-800">\${nama}</td>
+                                <td class="px-6 py-4 text-rose-600 italic font-medium">
+                                    <span class="inline-flex items-center gap-1 bg-rose-50 px-2 py-1 rounded border border-rose-100">
+                                        <i data-lucide="info" size="14"></i> \${reason}
+                                    </span>
+                                </td>
+                            </tr>
+                        `;
+                    }}
+                }});
 
-            try {
-                if (!SPREADSHEET_CSV_URL) {
-                    masterData = dummyData;
-                    document.getElementById('demoNotice').classList.remove('hidden');
-                } else {
-                    const response = await fetch(SPREADSHEET_CSV_URL);
-                    const csvText = await response.text();
-                    
-                    // Parsing baris CSV, memisahkan per baris dan kolom
-                    const rows = csvText.split('\\n').slice(1);
-                    masterData = rows.map(row => {
-                        const cols = row.match(/(".*?"|[^",\\s]+)(?=\\s*,|\\s*$)/g);
-                        if (!cols) return null;
-                        return {
-                            npsn: cols[0]?.replace(/"/g, '').trim(),
-                            nama: cols[1]?.replace(/"/g, '').trim(),
-                            status_warna: cols[2]?.replace(/"/g, '').toLowerCase().trim(),
-                            reason: cols[3]?.replace(/"/g, '').trim() || '-'
-                        };
-                    }).filter(item => item && item.npsn);
-                    
-                    document.getElementById('demoNotice').classList.add('hidden');
-                }
-                renderDashboard();
-            } catch (err) {
-                console.error("Fetch Error:", err);
-            } finally {
-                btn.disabled = false;
-                icon.classList.remove('animate-spin');
-            }
-        }
+                document.getElementById('installedCount').innerText = installed;
+                document.getElementById('troubleCount').innerText = trouble;
+                
+                const tableBody = document.getElementById('troubleTable');
+                if (troubleHtml === "") {{
+                    tableBody.innerHTML = '<tr><td colspan="3" class="px-6 py-10 text-center text-emerald-500 font-medium">Semua sekolah dalam kondisi baik.</td></tr>';
+                }} else {{
+                    tableBody.innerHTML = troubleHtml;
+                }}
+                
+                lucide.createIcons();
+            }} catch (e) {{
+                console.error(e);
+                document.getElementById('troubleTable').innerHTML = '<tr><td colspan="3" class="px-6 py-10 text-center text-rose-500">Gagal menyambungkan ke Google Sheets. Pastikan URL benar dan di-publish ke web.</td></tr>';
+            }}
+        }}
 
-        function renderDashboard() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            
-            // Filter data berdasarkan pemicu (hijau = terpasang, merah = trouble)
-            const installed = masterData.filter(d => d.status_warna === 'hijau');
-            const trouble = masterData.filter(d => d.status_warna === 'merah');
-
-            document.getElementById('countInstalled').innerText = installed.length;
-            document.getElementById('countTrouble').innerText = trouble.length;
-
-            const filteredTrouble = trouble.filter(d => 
-                d.npsn.toLowerCase().includes(searchTerm) || 
-                d.nama.toLowerCase().includes(searchTerm)
-            );
-
-            const tableBody = document.getElementById('tableBody');
-            tableBody.innerHTML = '';
-
-            if (filteredTrouble.length === 0) {
-                tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-12 text-center text-slate-400 font-medium">Tidak ada data kerusakan ditemukan.</td></tr>`;
-            } else {
-                filteredTrouble.forEach(item => {
-                    tableBody.innerHTML += `
-                        <tr class="hover:bg-rose-50/40 transition-colors">
-                            <td class="px-6 py-4 font-mono font-bold text-slate-600">\${item.npsn}</td>
-                            <td class="px-6 py-4 font-semibold text-slate-800">\${item.nama}</td>
-                            <td class="px-6 py-4">
-                                <span class="px-3 py-1 bg-rose-100 text-rose-700 rounded-full text-[10px] font-black uppercase tracking-wider">Bermasalah</span>
-                            </td>
-                            <td class="px-6 py-4 italic text-slate-500">\${item.reason}</td>
-                        </tr>`;
-                });
-            }
-        }
-
-        // Listener untuk tombol refresh dan kotak pencarian
-        document.getElementById('refreshBtn').addEventListener('click', fetchData);
-        document.getElementById('searchInput').addEventListener('input', renderDashboard);
-
-        window.onload = () => {
-            initIcons();
-            fetchData();
-        };
+        init();
+        lucide.createIcons();
     </script>
 </body>
 </html>
 """
 
-# Menampilkan HTML ke dalam frame Streamlit
-# Tinggi diset 900 agar cukup untuk tabel yang panjang
 components.html(html_code, height=1000, scrolling=True)
