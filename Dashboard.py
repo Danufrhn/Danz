@@ -1,5 +1,7 @@
 import streamlit as st
 import streamlit.components.v1 as components
+import pandas as pd
+import json
 
 # Konfigurasi Halaman Streamlit
 st.set_page_config(
@@ -8,10 +10,25 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Masukkan link CSV Google Sheets Anda di sini
-URL_SPREADSHEET = "https://docs.google.com/spreadsheets/d/1cf3listhOUa_7bURBzrnCVMMM_B3h931nW6ZxsaEPvI/edit?usp=sharing"
+# --- KONFIGURASI SPREADSHEET ---
+# Link ekspor CSV dari Google Sheets Anda
+URL_SPREADSHEET = "https://docs.google.com/spreadsheets/d/1cf3listhOUa_7bURBzrnCVMMM_B3h931nW6ZxsaEPvI/export?format=csv"
 
-# Menggunakan string biasa (tanpa f) untuk menghindari konflik kurung kurawal {} antara Python dan CSS/JS
+def get_data():
+    try:
+        # Menarik data menggunakan Python agar lebih stabil dan bypass CORS
+        df = pd.read_csv(URL_SPREADSHEET)
+        # Membersihkan nama kolom dari spasi
+        df.columns = [c.strip() for c in df.columns]
+        return df.to_dict(orient='records')
+    except Exception as e:
+        return []
+
+# Ambil data terbaru
+data_sekolah = get_data()
+data_json = json.dumps(data_sekolah)
+
+# Struktur Antarmuka (HTML/CSS/JS)
 html_code = """
 <!DOCTYPE html>
 <html lang="id">
@@ -22,69 +39,77 @@ html_code = """
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .glass-card { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
+        .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
     </style>
 </head>
-<body class="bg-slate-50 min-h-screen p-4 md:p-8">
+<body class="p-4 md:p-8">
 
     <div class="max-w-6xl mx-auto">
-        <!-- Header -->
+        <!-- Header Section -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
-                <h1 class="text-3xl font-extrabold text-slate-800 flex items-center gap-2">
-                    <i data-lucide="monitor" class="text-blue-600"></i>
-                    Dashboard Monitoring Sekolah
+                <h1 class="text-3xl font-extrabold text-slate-800 flex items-center gap-3">
+                    <div class="p-2 bg-indigo-600 rounded-lg text-white">
+                        <i data-lucide="database"></i>
+                    </div>
+                    Monitoring Berbasis NPSN
                 </h1>
-                <p class="text-slate-500">Status Pemasangan Real-time dari Spreadsheet</p>
+                <p class="text-slate-500 mt-1 uppercase text-[10px] font-bold tracking-[0.2em]">Data Terpusat Google Sheets</p>
             </div>
-            <button onclick="window.location.reload()" class="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all shadow-lg shadow-blue-200">
-                <i data-lucide="refresh-cw" size="18"></i> Refresh Data
-            </button>
+            <div class="flex flex-col items-end">
+                <button onclick="window.location.reload()" class="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 font-semibold active:scale-95">
+                    <i data-lucide="refresh-cw" size="18"></i> Refresh
+                </button>
+            </div>
         </div>
 
-        <!-- Statistik Utama -->
+        <!-- Kartu Statistik -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div class="glass-card p-6 rounded-2xl border border-emerald-100 shadow-sm flex items-center gap-5">
-                <div class="bg-emerald-500 p-4 rounded-xl text-white shadow-lg shadow-emerald-200">
+            <!-- Counter Terpasang -->
+            <div class="glass-card p-6 rounded-3xl border border-emerald-100 shadow-sm flex items-center gap-6">
+                <div class="bg-emerald-500 p-4 rounded-2xl text-white">
                     <i data-lucide="check-circle-2" size="32"></i>
                 </div>
                 <div>
-                    <p class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Terpasang (Hijau)</p>
-                    <h2 id="installedCount" class="text-4xl font-bold text-emerald-600">0</h2>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Terinstall</p>
+                    <h2 id="installedCount" class="text-5xl font-black text-emerald-600 tracking-tighter">0</h2>
                 </div>
             </div>
 
-            <div class="glass-card p-6 rounded-2xl border border-rose-100 shadow-sm flex items-center gap-5">
-                <div class="bg-rose-500 p-4 rounded-xl text-white shadow-lg shadow-rose-200">
-                    <i data-lucide="alert-triangle" size="32"></i>
+            <!-- Counter Trouble -->
+            <div class="glass-card p-6 rounded-3xl border border-rose-100 shadow-sm flex items-center gap-6">
+                <div class="bg-rose-500 p-4 rounded-2xl text-white animate-pulse-slow">
+                    <i data-lucide="alert-circle" size="32"></i>
                 </div>
                 <div>
-                    <p class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Bermasalah (Merah)</p>
-                    <h2 id="troubleCount" class="text-4xl font-bold text-rose-600">0</h2>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Trouble</p>
+                    <h2 id="troubleCount" class="text-5xl font-black text-rose-600 tracking-tighter">0</h2>
                 </div>
             </div>
         </div>
 
-        <!-- Tabel Detail -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
-                <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                    <i data-lucide="list-x" class="text-rose-500"></i>
-                    Daftar Sekolah Trouble
+        <!-- Daftar Trouble Berdasarkan Validasi NPSN -->
+        <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/30">
+                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="table-properties" class="text-indigo-500"></i>
+                    Rincian Kendala Sekolah
                 </h3>
+                <span id="timestamp" class="text-[10px] font-mono text-slate-400 uppercase"></span>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
-                    <thead class="bg-slate-50 text-slate-500 text-xs uppercase font-bold tracking-widest">
+                    <thead class="bg-slate-50 text-slate-400 text-[10px] uppercase font-bold tracking-widest">
                         <tr>
-                            <th class="px-6 py-4">NPSN</th>
-                            <th class="px-6 py-4">Nama Sekolah</th>
-                            <th class="px-6 py-4 text-rose-600">Alasan Kerusakan (Reason)</th>
+                            <th class="px-8 py-5">NPSN (Trigger)</th>
+                            <th class="px-8 py-5">Nama Sekolah</th>
+                            <th class="px-8 py-5 text-rose-600">Alasan / Kendala</th>
                         </tr>
                     </thead>
-                    <tbody id="troubleTable" class="divide-y divide-slate-100">
-                        <tr><td colspan="3" class="px-6 py-10 text-center text-slate-400 italic">Memuat data...</td></tr>
+                    <tbody id="troubleTable" class="divide-y divide-slate-100 text-sm">
+                        <!-- Data row akan di-generate di sini -->
                     </tbody>
                 </table>
             </div>
@@ -92,69 +117,76 @@ html_code = """
     </div>
 
     <script>
-        // Mengambil URL dari variabel Python secara aman
-        const CSV_URL = '""" + URL_SPREADSHEET + """';
+        const rawData = """ + data_json + """;
+        document.getElementById('timestamp').innerText = "Last Sync: " + new Date().toLocaleTimeString();
 
-        async function init() {
-            try {
-                const response = await fetch(CSV_URL);
-                const data = await response.text();
-                const rows = data.split('\\n').slice(1);
-                
-                let installed = 0;
-                let trouble = 0;
-                let troubleHtml = "";
+        function render() {
+            let countHijau = 0;
+            let countMerah = 0;
+            let tableRows = "";
 
-                rows.forEach(row => {
-                    // Penanganan CSV sederhana (pemisahan koma)
-                    const cols = row.split(',');
-                    if (cols.length < 3) return;
-
-                    const npsn = cols[0].trim();
-                    const nama = cols[1].trim();
-                    const warna = cols[2].toLowerCase().trim();
-                    const reason = cols[3] ? cols[3].trim() : "-";
-
-                    if (warna === 'hijau') {
-                        installed++;
-                    } else if (warna === 'merah') {
-                        trouble++;
-                        troubleHtml += `
-                            <tr class="hover:bg-rose-50/50 transition-colors">
-                                <td class="px-6 py-4 font-mono text-sm font-bold text-slate-600">#${npsn}</td>
-                                <td class="px-6 py-4 font-semibold text-slate-800">${nama}</td>
-                                <td class="px-6 py-4 text-rose-600 italic font-medium">
-                                    <span class="inline-flex items-center gap-1 bg-rose-50 px-2 py-1 rounded border border-rose-100">
-                                        <i data-lucide="info" size="14"></i> ${reason}
-                                    </span>
-                                </td>
-                            </tr>
-                        `;
-                    }
-                });
-
-                document.getElementById('installedCount').innerText = installed;
-                document.getElementById('troubleCount').innerText = trouble;
-                
-                const tableBody = document.getElementById('troubleTable');
-                if (troubleHtml === "") {
-                    tableBody.innerHTML = '<tr><td colspan="3" class="px-6 py-10 text-center text-emerald-500 font-medium">Semua sekolah dalam kondisi baik.</td></tr>';
-                } else {
-                    tableBody.innerHTML = troubleHtml;
-                }
-                
-                lucide.createIcons();
-            } catch (e) {
-                console.error(e);
-                document.getElementById('troubleTable').innerHTML = '<tr><td colspan="3" class="px-6 py-10 text-center text-rose-500">Gagal menyambungkan ke Google Sheets. Pastikan URL benar dan di-publish ke web.</td></tr>';
+            if (!rawData || rawData.length === 0) {
+                document.getElementById('troubleTable').innerHTML = '<tr><td colspan="3" class="px-8 py-20 text-center text-slate-400 italic">Database Kosong</td></tr>';
+                return;
             }
+
+            rawData.forEach(item => {
+                const keys = Object.keys(item);
+                
+                // TRIGGER UTAMA: NPSN
+                // Pastikan NPSN ada dan tidak kosong
+                const npsn = (item[keys[0]] || "").toString().trim();
+                
+                // Jika NPSN tidak ada, baris ini diabaikan sama sekali
+                if (!npsn || npsn === "" || npsn === "-") return;
+
+                const nama = item[keys[1]] || "Tanpa Nama";
+                const status = (item[keys[2]] || "").toString().toLowerCase().trim();
+                const reason = item[keys[3]] || "N/A";
+
+                // Logika Hitung Berdasarkan Status
+                if (status === 'hijau') {
+                    countHijau++;
+                } else if (status === 'merah') {
+                    countMerah++;
+                    tableRows += `
+                        <tr class="hover:bg-rose-50/40 transition-all">
+                            <td class="px-8 py-5 font-bold text-indigo-600 tracking-tight">#\${npsn}</td>
+                            <td class="px-8 py-5 font-semibold text-slate-700">\${nama}</td>
+                            <td class="px-8 py-5">
+                                <div class="flex items-center gap-2 bg-rose-50 text-rose-700 px-3 py-1.5 rounded-xl border border-rose-100 font-medium italic text-xs">
+                                    <i data-lucide="x-circle" size="14"></i> \${reason}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }
+            });
+
+            // Update statistik di UI
+            document.getElementById('installedCount').innerText = countHijau;
+            document.getElementById('troubleCount').innerText = countMerah;
+            
+            // Update tabel trouble
+            const tableBody = document.getElementById('troubleTable');
+            tableBody.innerHTML = tableRows || `
+                <tr>
+                    <td colspan="3" class="px-8 py-20 text-center">
+                        <div class="flex flex-col items-center gap-3 text-emerald-500 opacity-60">
+                            <i data-lucide="smile" size="48"></i>
+                            <span class="font-bold text-sm">Tidak ada data trouble yang terdeteksi melalui NPSN</span>
+                        </div>
+                    </td>
+                </tr>`;
+            
+            lucide.createIcons();
         }
 
-        init();
-        lucide.createIcons();
+        document.addEventListener('DOMContentLoaded', render);
     </script>
 </body>
 </html>
 """
 
-components.html(html_code, height=1000, scrolling=True)
+# Render komponen HTML ke dalam Streamlit
+components.html(html_code, height=1200, scrolling=True)
