@@ -1,6 +1,12 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
+<script>
+        // --- KONFIGURASI SPREADSHEET ---
+        // Tempelkan URL CSV Google Sheets Anda di bawah ini
+        const SPREADSHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1v.../pub?gid=0&single=true&output=csv"; 
+
+        let masterData = [];
 # Konfigurasi Halaman Streamlit agar tampilan penuh (wide)
 st.set_page_config(
     page_title="Dashboard Monitoring Sekolah",
