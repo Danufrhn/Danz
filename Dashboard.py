@@ -9,7 +9,7 @@ st.set_page_config(
 )
 
 # Masukkan link CSV Google Sheets Anda di sini
-URL_SPREADSHEET = "https://docs.google.com/spreadsheets/d/e/2PACX-1v.../pub?gid=0&single=true&output=csv"
+URL_SPREADSHEET = "https://docs.google.com/spreadsheets/d/1cf3listhOUa_7bURBzrnCVMMM_B3h931nW6ZxsaEPvI/edit?usp=sharing"
 
 # Menggunakan string biasa (tanpa f) untuk menghindari konflik kurung kurawal {} antara Python dan CSS/JS
 html_code = """
