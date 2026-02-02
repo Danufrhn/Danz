@@ -1,24 +1,47 @@
+import streamlit as st
+import streamlit.components.v1 as components
+
+# Konfigurasi Halaman Streamlit agar tampilan penuh (wide)
+st.set_page_config(
+    page_title="Dashboard Monitoring Sekolah",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
+# Seluruh kode UI (HTML, CSS, JS) disimpan dalam variabel html_code
+html_code = """
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Monitoring Pemasangan Sekolah</title>
-    <!-- Tailwind CSS CDN -->
+    <!-- Framework CSS Tailwind untuk desain modern -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
+    <!-- Library Ikon Lucide -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-        body { font-family: 'Inter', sans-serif; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
         .animate-spin-slow { animation: spin 2s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        
+        /* Kustomisasi Scrollbar agar lebih rapi */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900 min-h-screen">
+<body class="bg-slate-50 text-slate-900">
 
     <div id="app" class="p-4 md:p-8">
-        <!-- Header -->
+        <!-- Header Dashboard -->
         <div class="max-w-6xl mx-auto mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
                 <h1 class="text-3xl font-bold text-slate-800 flex items-center gap-3">
@@ -33,9 +56,9 @@
             </button>
         </div>
 
-        <!-- Stat Cards -->
+        <!-- Ringkasan Statistik (Stat Cards) -->
         <div class="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <!-- Card Terpasang -->
+            <!-- Sekolah Terpasang (Hijau) -->
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100 flex items-center gap-6">
                 <div class="bg-emerald-100 p-4 rounded-2xl text-emerald-600">
                     <i data-lucide="check-circle" class="w-10 h-10"></i>
@@ -46,7 +69,7 @@
                 </div>
             </div>
 
-            <!-- Card Trouble -->
+            <!-- Sekolah Bermasalah (Merah) -->
             <div class="bg-white p-6 rounded-2xl shadow-sm border border-rose-100 flex items-center gap-6">
                 <div class="bg-rose-100 p-4 rounded-2xl text-rose-600">
                     <i data-lucide="alert-circle" class="w-10 h-10"></i>
@@ -58,7 +81,7 @@
             </div>
         </div>
 
-        <!-- Table Section -->
+        <!-- Tabel Detail Trouble -->
         <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
             <div class="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h3 class="text-xl font-bold flex items-center gap-2 text-slate-800">
@@ -76,7 +99,7 @@
                 </div>
             </div>
 
-            <div class="overflow-x-auto text-sm md:text-base">
+            <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead class="bg-slate-50 text-slate-500">
                         <tr>
@@ -87,42 +110,39 @@
                         </tr>
                     </thead>
                     <tbody id="tableBody" class="divide-y divide-slate-100">
-                        <!-- Data akan muncul di sini -->
+                        <!-- Konten akan dimuat oleh JavaScript -->
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- Alert Demo -->
         <div id="demoNotice" class="hidden max-w-6xl mx-auto mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs md:text-sm">
-            <strong>Catatan:</strong> Menampilkan data demo. Untuk menggunakan data asli, masukkan URL CSV Google Sheets Anda di bagian script <code>SPREADSHEET_CSV_URL</code>.
+            <strong>Catatan:</strong> Menampilkan data demo. Pastikan URL CSV diisi di variabel SPREADSHEET_CSV_URL.
         </div>
     </div>
 
     <script>
-        // --- KONFIGURASI ---
-        // Masukkan URL Publikasi Google Sheets Anda di sini (Format CSV)
+        // --- KONFIGURASI SPREADSHEET ---
+        // Ganti string kosong di bawah ini dengan URL CSV Google Sheets Anda
+        // Format: Publish to Web -> Comma-separated values (.csv)
         const SPREADSHEET_CSV_URL = ""; 
 
         let masterData = [];
 
-        // Inisialisasi Ikon Lucide
         function initIcons() {
             lucide.createIcons();
         }
 
         const dummyData = [
-            { npsn: '1001', nama: 'SDN 01 Jakarta', status_warna: 'hijau', reason: '-' },
-            { npsn: '1002', nama: 'SDN 02 Jakarta', status_warna: 'merah', reason: 'Koneksi FO Putus oleh alat berat' },
-            { npsn: '1003', nama: 'SMPN 05 Bandung', status_warna: 'hijau', reason: '-' },
-            { npsn: '1004', nama: 'SMKN 01 Medan', status_warna: 'merah', reason: 'Power Supply Rusak / Tersambar Petir' },
-            { npsn: '1005', nama: 'SDN 10 Surabaya', status_warna: 'hijau', reason: '-' },
+            { npsn: '1001', nama: 'SDN Contoh 01', status_warna: 'hijau', reason: '-' },
+            { npsn: '1002', nama: 'SDN Contoh 02', status_warna: 'merah', reason: 'Kabel terputus proyek jalan' },
+            { npsn: '1003', nama: 'SMPN Contoh 05', status_warna: 'hijau', reason: '-' },
+            { npsn: '1004', nama: 'SMKN Contoh 01', status_warna: 'merah', reason: 'Antena tersambar petir' }
         ];
 
         async function fetchData() {
             const btn = document.getElementById('refreshBtn');
             const icon = document.getElementById('refreshIcon');
-            
             btn.disabled = true;
             icon.classList.add('animate-spin');
 
@@ -134,10 +154,10 @@
                     const response = await fetch(SPREADSHEET_CSV_URL);
                     const csvText = await response.text();
                     
-                    const rows = csvText.split('\n').slice(1);
+                    // Parsing baris CSV, memisahkan per baris dan kolom
+                    const rows = csvText.split('\\n').slice(1);
                     masterData = rows.map(row => {
-                        // Regex untuk menangani koma di dalam tanda kutip (antisipasi nama sekolah yang mengandung koma)
-                        const cols = row.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+                        const cols = row.match(/(".*?"|[^",\\s]+)(?=\\s*,|\\s*$)/g);
                         if (!cols) return null;
                         return {
                             npsn: cols[0]?.replace(/"/g, '').trim(),
@@ -149,11 +169,9 @@
                     
                     document.getElementById('demoNotice').classList.add('hidden');
                 }
-
                 renderDashboard();
             } catch (err) {
-                console.error(err);
-                alert("Gagal memuat data. Periksa koneksi atau URL Spreadsheet Anda.");
+                console.error("Fetch Error:", err);
             } finally {
                 btn.disabled = false;
                 icon.classList.remove('animate-spin');
@@ -163,14 +181,13 @@
         function renderDashboard() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             
+            // Filter data berdasarkan pemicu (hijau = terpasang, merah = trouble)
             const installed = masterData.filter(d => d.status_warna === 'hijau');
             const trouble = masterData.filter(d => d.status_warna === 'merah');
 
-            // Update Counts
             document.getElementById('countInstalled').innerText = installed.length;
             document.getElementById('countTrouble').innerText = trouble.length;
 
-            // Render Table
             const filteredTrouble = trouble.filter(d => 
                 d.npsn.toLowerCase().includes(searchTerm) || 
                 d.nama.toLowerCase().includes(searchTerm)
@@ -180,39 +197,26 @@
             tableBody.innerHTML = '';
 
             if (filteredTrouble.length === 0) {
-                tableBody.innerHTML = `
-                    <tr>
-                        <td colspan="4" class="px-6 py-12 text-center text-slate-400 font-medium">
-                            Tidak ada data sekolah bermasalah ditemukan.
-                        </td>
-                    </tr>
-                `;
+                tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-12 text-center text-slate-400 font-medium">Tidak ada data kerusakan ditemukan.</td></tr>`;
             } else {
                 filteredTrouble.forEach(item => {
-                    const row = `
+                    tableBody.innerHTML += `
                         <tr class="hover:bg-rose-50/40 transition-colors">
-                            <td class="px-6 py-4 font-mono font-bold text-slate-600">${item.npsn}</td>
-                            <td class="px-6 py-4 font-semibold text-slate-800">${item.nama}</td>
+                            <td class="px-6 py-4 font-mono font-bold text-slate-600">\${item.npsn}</td>
+                            <td class="px-6 py-4 font-semibold text-slate-800">\${item.nama}</td>
                             <td class="px-6 py-4">
-                                <span class="px-3 py-1 bg-rose-100 text-rose-700 rounded-full text-[10px] font-black uppercase tracking-wider">
-                                    Bermasalah
-                                </span>
+                                <span class="px-3 py-1 bg-rose-100 text-rose-700 rounded-full text-[10px] font-black uppercase tracking-wider">Bermasalah</span>
                             </td>
-                            <td class="px-6 py-4 italic text-slate-500">
-                                ${item.reason}
-                            </td>
-                        </tr>
-                    `;
-                    tableBody.innerHTML += row;
+                            <td class="px-6 py-4 italic text-slate-500">\${item.reason}</td>
+                        </tr>`;
                 });
             }
         }
 
-        // Event Listeners
+        // Listener untuk tombol refresh dan kotak pencarian
         document.getElementById('refreshBtn').addEventListener('click', fetchData);
         document.getElementById('searchInput').addEventListener('input', renderDashboard);
 
-        // Run on load
         window.onload = () => {
             initIcons();
             fetchData();
@@ -220,3 +224,8 @@
     </script>
 </body>
 </html>
+"""
+
+# Menampilkan HTML ke dalam frame Streamlit
+# Tinggi diset 900 agar cukup untuk tabel yang panjang
+components.html(html_code, height=1000, scrolling=True)
