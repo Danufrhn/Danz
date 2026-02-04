@@ -5,7 +5,7 @@ import json
 
 # Konfigurasi Halaman Streamlit
 st.set_page_config(
-    page_title="Dashboard Monitoring Pemasangan Sekolah",
+    page_title="Dashboard Monitoring Instalasi IFP Sekolah",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
