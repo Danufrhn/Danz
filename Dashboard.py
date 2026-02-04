@@ -103,7 +103,7 @@ html_code = """
                 <table class="w-full text-left">
                     <thead class="bg-slate-50 text-slate-400 text-[10px] uppercase font-bold tracking-widest">
                         <tr>
-                            <th class="px-8 py-5">NPSN (Trigger)</th>
+                            <th class="px-8 py-5">NPSN </th>
                             <th class="px-8 py-5">Nama Sekolah</th>
                             <th class="px-8 py-5 text-rose-600">Alasan / Kendala</th>
                         </tr>
